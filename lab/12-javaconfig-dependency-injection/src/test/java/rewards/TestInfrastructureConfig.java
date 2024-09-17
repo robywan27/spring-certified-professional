@@ -1,7 +1,9 @@
 package rewards;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import config.RewardsConfig;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.*;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 
 import javax.sql.DataSource;
@@ -53,17 +55,54 @@ import javax.sql.DataSource;
  *
  */
 @Configuration
+@Import(RewardsConfig.class)
+//@Profile("development") // profiles can control which property source is used
+//@PropertySource("classpath:com/org/config/app.properties")
+//@PropertySource("file:local/config.properties")
 public class TestInfrastructureConfig {
+//	@Value("#{systemProperties['user.language']}") String language; // sets the value of the property using SpEL
+
+//	@Value("#{environment['daily.limit']}") int transactionLimit; // both equivalent
+//	@Value("${daily.limit}") int transactionLimit; // both equivalent
+	// Note that the conversion from string property to int value happens implicitly
+	// inside the expression, you need to cast to int before doing an operation
+		// example: @Value("#{new Integer(environment['daily.limit']) * 2}")
+	// It's possible to provide default values:
+//	@Value("${daily.limit : 1000}") int transactionLimit; // if daily.limit is undefined fallback to default
+//	@Value("#{environment['daily.limit'] ?: 1000}") int transactionLimit; // elvis operator: x != null ? x : y
 
 	/**
 	 * Creates an in-memory "rewards" database populated
 	 * with test data for fast testing
 	 */
 	@Bean
-	public DataSource dataSource() {
+	// In case of config coming from property files, it's possible to get the values of the config properties via the
+	// Environment. It's possible to use the env both explicitly and implicitly:
+	// - explicitly: define property source via @PropertySource, pass Environment as parameter, get value of each
+	// property
+		//	public DataSource dataSource(Environment environment) {
+		// 		BasicDataSource ds = new BasicDataSource();
+		//		ds.setUrl(env.getProperty("db.url"));
+		//		...
+		//	}
+	// - implicitly: use @Value
+		// public DataSource dataSource(
+		//	 @Value("{db.url}") String url,
+		//  ...
+		// )
+//	@Profile("development")
+	public DataSource dataSource(Environment environment) {
 		return (new EmbeddedDatabaseBuilder()) //
 				.addScript("classpath:rewards/testdb/schema.sql") //
 				.addScript("classpath:rewards/testdb/data.sql") //
 				.build();
 	}
+
+//	@Profile("!development") // valid when dev profile is not active
+//	public DataSource dataSourceForProd(Environment environment) {
+//		return (new EmbeddedDatabaseBuilder()) //
+//				.addScript("classpath:rewards/proddb/schema.sql") //
+//				.addScript("classpath:rewards/proddb/data.sql") //
+//				.build();
+//	}
 }
